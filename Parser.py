@@ -1,14 +1,17 @@
 import re
 import json
 
-file = open('games_teste.log', 'r')
+file = open('games.log', 'r')
 
 lines = file.readlines()
 
+gamesCount = -1
 games = []
 kills_by_means = []
+ranking = {}
 
 def newGame():
+    kills_by_means.append({})
     games.append({
             'total_kills': 0,
             'players': [],
@@ -18,30 +21,27 @@ def newGame():
 def substring(string, init, end):
     return string[init:end]
 
-gamesCount = -1
 for line in lines:
     if "InitGame:" in line: 
         newGame()
         gamesCount = gamesCount + 1
-        kills_by_means.append({})
     
     if "ClientUserinfoChanged:" in line: 
-        player = substring(line, line.find('n\\')+2, line.find('\\t'))
+        player = substring(line, re.search('\sn.', line).span()[1], line.find('\\t'))
         if player not in games[gamesCount]['players']:
             games[gamesCount]['players'].append(player)
             games[gamesCount]['kills'][player] = 0
 
-    if "<world> killed" in line:
-        player = substring(line, line.find('<world> killed')+15, line.find(' by'))
-        games[gamesCount]['kills'][player] -= 1
-        games[gamesCount]['total_kills'] += 1
+    if 'killed' in line:
+        if '<world> ' in line:
+            player = substring(line, re.search('killed\s', line).span()[1], line.find(' by'))
+            games[gamesCount]['kills'][player] -= 1
+            games[gamesCount]['total_kills'] += 1
+        else: 
+            killer = substring(line, re.search('\d:\s', line).span()[1], line.find(' killed'))
+            games[gamesCount]['kills'][killer] += 1
+            games[gamesCount]['total_kills'] += 1
 
-    if 'killed' in line and '<world> killed' not in line:
-        killer = substring(line, re.search('\d:\s', line).span()[1], line.find(' killed'))
-        games[gamesCount]['kills'][killer] += 1
-        games[gamesCount]['total_kills'] += 1
-    
-    if 'by' in line:
         mean_of_death = substring(line, re.search('by ', line).span()[1], len(line)-1)
         if mean_of_death in kills_by_means[gamesCount]:
             kills_by_means[gamesCount][mean_of_death] += 1
@@ -56,7 +56,6 @@ for i in range(0, len(games)):
     print('game_' + str(i+1) +':', json.dumps(games[i], indent=4))
 
 # -------------- Task 2 --------------
-ranking = {}
 print('\nTASK 2')
 for i in range(0, len(games[i]['kills'])-1):
     for key, value in games[i]['kills'].items():
