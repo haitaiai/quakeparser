@@ -34,6 +34,11 @@ for line in lines:
         player = substring(line, line.find('<world> killed')+15, line.find(' by'))
         games[gamesCount]['kills'][player] -= 1
         games[gamesCount]['total_kills'] += 1
-        print(games[gamesCount])
 
-    
+    if 'killed' in line and '<world> killed' not in line:
+        killer = substring(line, re.search('\d:\s', line).span()[1], line.find(' killed'))
+        games[gamesCount]['kills'][killer] += 1
+        games[gamesCount]['total_kills'] += 1
+
+
+print(games)    
