@@ -1,15 +1,18 @@
+import sys
 import re
 import json
 
-file = open('games.log', 'r')
+file = open(sys.argv[1], 'r')
 
 lines = file.readlines()
 
+# Variáveis
 gamesCount = -1
 games = []
 kills_by_means = []
 ranking = {}
 
+# Inicia um novo game
 def newGame():
     kills_by_means.append({})
     games.append({
@@ -18,20 +21,26 @@ def newGame():
             'kills': {},
         })
 
+# Retorna uma substring
 def substring(string, init, end):
     return string[init:end]
 
+# Percorre todas as linhas
 for line in lines:
+    # Inicia um novo game
     if "InitGame:" in line: 
         newGame()
         gamesCount = gamesCount + 1
     
+    # Captura o nome do usuário e adiciona ele no game
     if "ClientUserinfoChanged:" in line: 
         player = substring(line, re.search('\sn.', line).span()[1], line.find('\\t'))
         if player not in games[gamesCount]['players']:
             games[gamesCount]['players'].append(player)
             games[gamesCount]['kills'][player] = 0
 
+    # Se houver um abate, testa se foi morte para o mundo ou se foi assassinato.
+    # Em ambos os casos salva o motivo da morte. 
     if 'killed' in line:
         if '<world> ' in line:
             player = substring(line, re.search('killed\s', line).span()[1], line.find(' by'))
